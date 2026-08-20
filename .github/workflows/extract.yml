@@ -24,10 +24,3 @@ jobs:
       - name: Run extractor
         run: |
           python extract.py
-
-      - name: Upload debug screenshot
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: apkpure-debug
-          path: apkpure-debug.png
