@@ -1,72 +1,96 @@
-from playwright.sync_api import sync_playwright
+import re
+import subprocess
+import sys
 
 
-URL = "https://apkpure.net/instagram-app/com.instagram.android/download"
+VERSION = "443.0.0.48.82"
+URL = "https://apkcombo.com/instagram/com.instagram.android/download/apk"
+
+
+def download_html() -> str:
+    result = subprocess.run(
+        [
+            "curl",
+            "-L",
+            "--fail",
+            "--silent",
+            "--show-error",
+            "--compressed",
+            "-A",
+            "Mozilla/5.0",
+            URL,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    if result.returncode != 0:
+        print("Failed to download APKCombo page.")
+        print(result.stderr)
+        sys.exit(1)
+
+    return result.stdout
+
+
+def extract_version_codes(html: str) -> dict[str, list[str]]:
+    architecture_pattern = re.compile(
+        r"<code>([^<]+)</code>(.*?)(?=<code>|$)",
+        re.DOTALL,
+    )
+
+    version_pattern = re.compile(
+        rf'<span class="vername">Instagram\s+'
+        rf'{re.escape(VERSION)}</span>\s*'
+        rf'<span class="vercode">\((\d+)\)</span>',
+        re.DOTALL,
+    )
+
+    results: dict[str, list[str]] = {}
+
+    for architecture_match in architecture_pattern.finditer(html):
+        architecture = architecture_match.group(1).strip()
+        section_html = architecture_match.group(2)
+
+        version_codes = version_pattern.findall(section_html)
+
+        if not version_codes:
+            continue
+
+        results[architecture] = sorted(
+            set(version_codes),
+            key=int,
+        )
+
+    return results
 
 
 def main() -> None:
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
+    html = download_html()
 
-        page = browser.new_page(
-            viewport={
-                "width": 1920,
-                "height": 1080,
-            }
-        )
+    print(f"Downloaded HTML: {len(html)} bytes")
+    print(f"Version: {VERSION}")
+    print()
 
-        try:
-            response = page.goto(
-                URL,
-                wait_until="domcontentloaded",
-                timeout=60_000,
-            )
+    results = extract_version_codes(html)
 
-            print(
-                f"HTTP status: "
-                f"{response.status if response else 'unknown'}"
-            )
+    if not results:
+        print("No versionCodes found.")
+        sys.exit(1)
 
-        except Exception as exception:
-            print(f"Navigation error: {exception}")
+    total = 0
 
-        print(f"Final URL: {page.url}")
+    for architecture, version_codes in results.items():
+        print(f"{architecture}:")
 
-        try:
-            print(f"Title: {page.title()}")
-        except Exception as exception:
-            print(f"Title error: {exception}")
+        for version_code in version_codes:
+            print(f"  {version_code}")
 
-        # Lăsăm JavaScript-ul paginii să încarce conținutul dinamic.
-        page.wait_for_timeout(10_000)
+        print()
 
-        try:
-            body_text = page.locator("body").inner_text(
-                timeout=10_000,
-            )
+        total += len(version_codes)
 
-            print(f"Body length: {len(body_text)}")
-            print()
-            print("===== PAGE TEXT =====")
-            print(body_text[:8000])
-            print("===== END PAGE TEXT =====")
-
-        except Exception as exception:
-            print(f"Body error: {exception}")
-
-        try:
-            page.screenshot(
-                path="apkpure-debug.png",
-                full_page=True,
-                timeout=30_000,
-            )
-
-            print("Screenshot created.")
-
-        except Exception as exception:
-            print(f"Screenshot error: {exception}")
-
-        browser.close()
+    print(f"Total versionCodes: {total}")
 
 
 if __name__ == "__main__":
