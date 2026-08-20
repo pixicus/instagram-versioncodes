@@ -4,16 +4,12 @@ from playwright.sync_api import sync_playwright
 
 
 VERSION = "443.0.0.48.82"
-
 URL = "https://apkpure.net/instagram-app/com.instagram.android/download"
 
 
 def main() -> None:
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(
-            headless=False,
-        )
-
+        browser = playwright.chromium.launch(headless=True)
         page = browser.new_page()
 
         page.goto(
@@ -31,7 +27,7 @@ def main() -> None:
 
         count = show_more_buttons.count()
 
-        print(f"Show More găsite: {count}")
+        print(f"Show More found: {count}")
 
         for index in range(count):
             try:
@@ -39,7 +35,7 @@ def main() -> None:
                 page.wait_for_timeout(1000)
             except Exception as exception:
                 print(
-                    f"Nu am putut apăsa Show More #{index}: "
+                    f"Could not click Show More #{index}: "
                     f"{exception}"
                 )
 
@@ -53,8 +49,8 @@ def main() -> None:
         )
 
         print()
-        print(f"Versiune: {VERSION}")
-        print(f"VersionCodes găsite: {len(version_codes)}")
+        print(f"Version: {VERSION}")
+        print(f"VersionCodes found: {len(version_codes)}")
         print()
 
         for version_code in version_codes:
