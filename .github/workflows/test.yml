@@ -34,6 +34,6 @@ jobs:
           grep -o "443\.0\.0\.48\.82" apkcombo.html | wc -l || true
 
           echo ""
-          echo "Possible versionCodes:"
-          grep -oE '443\.0\.0\.48\.82[^0-9]{0,30}[0-9]{8,12}' apkcombo.html \
-            | head -30 || true
+          echo "Context around version 443:"
+          grep -n -B 5 -A 10 "443\.0\.0\.48\.82" apkcombo.html \
+            | head -150 || true
