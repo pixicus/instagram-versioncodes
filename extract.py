@@ -1,60 +1,44 @@
-import re
-
 from playwright.sync_api import sync_playwright
 
 
-VERSION = "443.0.0.48.82"
 URL = "https://apkpure.net/instagram-app/com.instagram.android/download"
 
 
 def main() -> None:
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
-        page = browser.new_page()
 
-        page.goto(
+        page = browser.new_page(
+            viewport={
+                "width": 1920,
+                "height": 1080,
+            }
+        )
+
+        response = page.goto(
             URL,
-            wait_until="domcontentloaded",
-            timeout=60_000,
+            wait_until="networkidle",
+            timeout=90_000,
         )
 
-        page.wait_for_timeout(3000)
+        print(f"HTTP status: {response.status if response else 'unknown'}")
+        print(f"Final URL: {page.url}")
+        print(f"Title: {page.title()}")
 
-        show_more_buttons = page.get_by_text(
-            "Show More",
-            exact=True,
-        )
+        page.wait_for_timeout(5000)
 
-        count = show_more_buttons.count()
+        body_text = page.locator("body").inner_text()
 
-        print(f"Show More found: {count}")
-
-        for index in range(count):
-            try:
-                show_more_buttons.nth(index).click()
-                page.wait_for_timeout(1000)
-            except Exception as exception:
-                print(
-                    f"Could not click Show More #{index}: "
-                    f"{exception}"
-                )
-
-        page_text = page.locator("body").inner_text()
-
-        pattern = rf"{re.escape(VERSION)}\s*\((\d+)\)"
-
-        version_codes = sorted(
-            set(re.findall(pattern, page_text)),
-            key=int,
-        )
-
+        print(f"Body length: {len(body_text)}")
         print()
-        print(f"Version: {VERSION}")
-        print(f"VersionCodes found: {len(version_codes)}")
-        print()
+        print("===== PAGE TEXT =====")
+        print(body_text[:5000])
+        print("===== END PAGE TEXT =====")
 
-        for version_code in version_codes:
-            print(version_code)
+        page.screenshot(
+            path="apkpure-debug.png",
+            full_page=True,
+        )
 
         browser.close()
 
