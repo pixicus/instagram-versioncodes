@@ -16,11 +16,5 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Playwright
-        run: |
-          pip install playwright
-          playwright install chromium
-
       - name: Run extractor
-        run: |
-          python extract.py
+        run: python extract.py
