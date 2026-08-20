@@ -11,8 +11,29 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Test APKCombo
+      - name: Test APKCombo content
         run: |
-          curl -L -I \
+          curl -L \
+            --fail \
+            --silent \
+            --show-error \
+            --compressed \
             -A "Mozilla/5.0" \
-            "https://apkcombo.com/instagram/com.instagram.android/download/apk"
+            "https://apkcombo.com/instagram/com.instagram.android/download/apk" \
+            -o apkcombo.html
+
+          echo "File size:"
+          wc -c apkcombo.html
+
+          echo ""
+          echo "Instagram occurrences:"
+          grep -oi "Instagram" apkcombo.html | wc -l || true
+
+          echo ""
+          echo "443 version occurrences:"
+          grep -o "443\.0\.0\.48\.82" apkcombo.html | wc -l || true
+
+          echo ""
+          echo "Possible versionCodes:"
+          grep -oE '443\.0\.0\.48\.82[^0-9]{0,30}[0-9]{8,12}' apkcombo.html \
+            | head -30 || true
