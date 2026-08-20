@@ -15,30 +15,56 @@ def main() -> None:
             }
         )
 
-        response = page.goto(
-            URL,
-            wait_until="networkidle",
-            timeout=90_000,
-        )
+        try:
+            response = page.goto(
+                URL,
+                wait_until="domcontentloaded",
+                timeout=60_000,
+            )
 
-        print(f"HTTP status: {response.status if response else 'unknown'}")
+            print(
+                f"HTTP status: "
+                f"{response.status if response else 'unknown'}"
+            )
+
+        except Exception as exception:
+            print(f"Navigation error: {exception}")
+
         print(f"Final URL: {page.url}")
-        print(f"Title: {page.title()}")
 
-        page.wait_for_timeout(5000)
+        try:
+            print(f"Title: {page.title()}")
+        except Exception as exception:
+            print(f"Title error: {exception}")
 
-        body_text = page.locator("body").inner_text()
+        # Lăsăm JavaScript-ul paginii să încarce conținutul dinamic.
+        page.wait_for_timeout(10_000)
 
-        print(f"Body length: {len(body_text)}")
-        print()
-        print("===== PAGE TEXT =====")
-        print(body_text[:5000])
-        print("===== END PAGE TEXT =====")
+        try:
+            body_text = page.locator("body").inner_text(
+                timeout=10_000,
+            )
 
-        page.screenshot(
-            path="apkpure-debug.png",
-            full_page=True,
-        )
+            print(f"Body length: {len(body_text)}")
+            print()
+            print("===== PAGE TEXT =====")
+            print(body_text[:8000])
+            print("===== END PAGE TEXT =====")
+
+        except Exception as exception:
+            print(f"Body error: {exception}")
+
+        try:
+            page.screenshot(
+                path="apkpure-debug.png",
+                full_page=True,
+                timeout=30_000,
+            )
+
+            print("Screenshot created.")
+
+        except Exception as exception:
+            print(f"Screenshot error: {exception}")
 
         browser.close()
 
